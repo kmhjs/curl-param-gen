@@ -117,9 +117,9 @@ The result for following command execution.
 ```
 
 ```
-curl -H 'session_id:header-option' | \
-     -H 'type:sample' | \
-     -H 'Cookie: session_id=session-id-value-0123456789; option=cookie-option' | \
+curl -H 'session_id:header-option' \
+     -H 'type:sample' \
+     -H 'Cookie: session_id=session-id-value-0123456789; option=cookie-option' \
      'http://example.com/task?option=query-option&constant_field=constant-value&id=0123456789&name=username'
 ```
 
