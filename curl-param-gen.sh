@@ -116,7 +116,7 @@ function _zcpb::main()
   if [[ ${modes[(I)--pretty]} != 0 ]]
   then
     local indent_heading_space='     '
-    local linebreak_escape=' | \'
+    local linebreak_escape=' \'
 
     echo "curl ${headers[1]}${linebreak_escape}"
     foreach header_element (${headers[2,-1]})
