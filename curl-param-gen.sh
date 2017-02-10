@@ -3,7 +3,7 @@
 #
 # Load zcl
 #
-source ./lib/zcl 1>/dev/null 2>/dev/null
+source ./lib/zcl
 
 #
 # Generates mapping script line (will be used by `eval`)
@@ -33,7 +33,7 @@ function _zcpb::main()
   #
   # Verifies zcl is available or not
   #
-  if ! type _zcl::main 1>/dev/null 2>/dev/null
+  if ! type zcl 1>/dev/null 2>/dev/null
   then
     echo "Error: zcl unavailable." 1>&2
     return 1
@@ -74,7 +74,7 @@ function _zcpb::main()
   typeset -A query=()
   typeset -A cookie=()
 
-  eval $(_zcl::main ${definition_conf_path} _zcpb::eval_string :type :key :value)
+  eval $(zcl ${definition_conf_path} _zcpb::eval_string :type :key :value)
 
   #
   # Build header
