@@ -52,16 +52,42 @@ function _zcpb::verify_no_duplicated_options()
   fi
 
   # Verify the target
-  if [[ ${args[(I)${options[1]}]} == 0 ]]
+  if [[ ${args[(i)${options[1]}]} == 0 ]]
   then
     return 0
   fi
 
-  if [[ ${args[(I)${options[2]}]} != 0 ]]
+  if [[ ${args[(i)${options[2]}]} != 0 ]]
   then
     return 1
   fi
 
+  return 0
+}
+
+#
+# Select next target index of given option
+#
+# Example:
+#   ./$0 --key -k1 v1 -k2 v2 --key v3 --key v4 -k5 v5
+#
+#   returns, 6. Index of option correspond to value v3.
+#
+# @param Parse target option
+# @return Result index (null if value not found for key)
+#
+function _zcpb::get_option()
+{
+  local option_key=$1
+  shift
+
+  local -i idx=${*[(i)${option_key}]}
+  if [[ ${idx} == 0 ]]
+  then
+    return 1
+  fi
+
+  echo ${*[$((${idx} + 1))]}
   return 0
 }
 
