@@ -22,6 +22,50 @@ function _zcpb::eval_string()
 }
 
 #
+# Verifies there are no duplicated options
+# (Duplicated options means short/long option etc. Not same options)
+#
+# @param 1st option string
+# @param 2nd option string
+# @param Args for script
+#
+function _zcpb::verify_no_duplicated_options()
+{
+  local -a options=($1 $2)
+  local -a args=($*)
+
+  # Verify args for this function
+  if [[ ${#options} != 2 ]]
+  then
+    echo "Error: Invalid option was found for $0" 1>&2
+    return 1
+  fi
+
+  # Remove heading option string
+  args[1,2]=()
+
+  # Verify the number of args
+  if [[ ${#args} == 0 ]]
+  then
+    echo "Error: No args for verify in $0" 1>&2
+    return 1
+  fi
+
+  # Verify the target
+  if [[ ${args[(I)${options[1]}]} == 0 ]]
+  then
+    return 0
+  fi
+
+  if [[ ${args[(I)${options[2]}]} != 0 ]]
+  then
+    return 1
+  fi
+
+  return 0
+}
+
+#
 # Main task of zcpb
 #
 # @param definition_conf_path Parameter definition file path.
