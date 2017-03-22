@@ -11,12 +11,12 @@ Generate curl parameter from configuration file.
 1. Main script requires [kmhjs/zcl](https://github.com/kmhjs/zcl). Run `init.sh` as `./init.sh` .
     * `zcl` will be downloaded into `lib` directory.
 2. Prepare your definition and configuration file.
-3. Use script as `./curl-param-gen.sh ./example/definition.conf ./example/user.conf`
+3. Use script as `./curl-param-gen.sh -d ./example/definition.conf -c ./example/user.conf -c ./example/user_secret.conf`
 
 ### Notes
 
 * Pretty print option is available.
-    * Use script as `./curl-param-gen.sh ./example/definition.conf ./example/user.conf --pretty` .
+    * Use script as `./curl-param-gen.sh -d ./example/definition.conf -c ./example/user.conf -c ./example/user_secret.conf --pretty` .
 
 ## Example
 
@@ -91,7 +91,11 @@ Note that value must be urlencoded value if you use constant value.
 Following configuration is an example for example definition.  
 Variable name must be matched to definition value field (if you use variable in `:value`) .
 
-Note that value must be urlencoded value.
+Note:
+
+* Value must be urlencoded value
+* Configuration file will imported by `source` command
+  * DO NOT use `PATH` and other special variable (used by your system) for configuration variable.
 
 ```
 base_url='http://example.com'
@@ -108,12 +112,21 @@ cookie_session_id='session-id-value-0123456789'
 cookie_option='cookie-option'
 ```
 
+If you give more than 2 file paths with `-c` option, duplicated configuration will be overwritten.  
+For example:
+
+* If you give 2 configuration files `first.conf` and `second.conf`
+  * As `-c first.conf -c second.conf`
+  * Both of them contains value for variable `session_id`
+
+In this case, the value defined in `second.conf` will be used for the final result.
+
 ### Result
 
 The result for following command execution.
 
 ```
-./curl-param-gen.sh ./example/definition.conf ./example/user.conf --pretty
+./curl-param-gen.sh -d ./example/definition.conf -c ./example/user.conf -c ./example/user_secret.conf --pretty
 ```
 
 ```
