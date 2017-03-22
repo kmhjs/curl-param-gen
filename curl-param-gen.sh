@@ -22,6 +22,126 @@ function _zcpb::eval_string()
 }
 
 #
+# Verifies there are no duplicated options
+# (Duplicated options means short/long option etc. Not same options)
+#
+# @param 1st option string
+# @param 2nd option string
+# @param Args for script
+#
+function _zcpb::verify_no_duplicated_options()
+{
+  local -a options=($1 $2)
+  local -a args=($*)
+
+  # Verify args for this function
+  if [[ ${#options} != 2 ]]
+  then
+    echo "Error: Invalid option was found for $0" 1>&2
+    return 1
+  fi
+
+  # Remove heading option string
+  args[1,2]=()
+
+  # Verify the number of args
+  if [[ ${#args} == 0 ]]
+  then
+    echo "Error: No args for verify in $0" 1>&2
+    return 1
+  fi
+
+  # Verify the target
+  if [[ ${args[(i)${options[1]}]} == $((${#args} + 1)) ]]
+  then
+    return 0
+  fi
+
+  if [[ ${args[(i)${options[2]}]} != $((${#args} + 1)) ]]
+  then
+    return 1
+  fi
+
+  return 0
+}
+
+#
+# Select next target index of given option
+#
+# Example:
+#   ./$0 --key -k1 v1 -k2 v2 --key v3 --key v4 -k5 v5
+#
+#   returns, 6. Index of option correspond to value v3.
+#
+# @param Parse target option
+# @return Result index (null if value not found for key)
+#
+function _zcpb::get_option_index()
+{
+  local option_key=$1
+  shift
+
+  local -i idx=${*[(i)${option_key}]}
+  if [[ ${idx} == $# ]]
+  then
+    return 1
+  fi
+
+  echo ${idx}
+  return 0
+}
+
+#
+# Check zcl availability
+#
+function _zcpb::is_zcl_available()
+{
+  type zcl 1>/dev/null 2>/dev/null
+}
+
+#
+# Check given index is valid for array
+#
+# Note: For index validation of (i) option result
+#
+# @param index value [1..N]
+# @param Target array
+#
+function _zcpb::is_valid_index_for_array()
+{
+  local -i index=$1
+  shift
+
+  (( ${index} < $(($# + 1)) ))
+}
+
+#
+# Show help
+#
+function _zcpb::show_help()
+{
+cat <<EOF
+SYNOPSIS
+  ./curl-param-gen.sh [-h] [--pretty] [-d definition-file-path] [-c configuration-file-path] ...
+
+OPTIONS
+  -h, --help : Show this message
+  --pretty : Print curl command line with indent
+  -d, --definition-file : Set definition file path
+  -c, --configuration-file : Set configuration file path
+
+USAGE
+  1. Show curl command for configuration
+
+    ./curl-param-gen.sh -d definition.conf -c conf1.conf -c conf2.conf
+
+  2. Show help
+
+    ./curl-param-gen.sh -h
+EOF
+}
+
+#
 # Main task of zcpb
 #
 # @param definition_conf_path Parameter definition file path.
@@ -30,10 +150,23 @@ function _zcpb::eval_string()
 #
 function _zcpb::main()
 {
+  local -a args=($*)
+
   #
-  # Verifies zcl is available or not
+  # Check args contains help option or not
   #
-  if ! type zcl 1>/dev/null 2>/dev/null
+  foreach option_key ('-h' '--help')
+  do
+    opt_idx=$(_zcpb::get_option_index ${option_key} ${args})
+    if _zcpb::is_valid_index_for_array ${opt_idx} ${args}
+    then
+      _zcpb::show_help
+      return 0
+    fi
+  done
+
+
+  if ! _zcpb::is_zcl_available
   then
     echo "Error: zcl unavailable." 1>&2
     return 1
@@ -42,73 +175,160 @@ function _zcpb::main()
   #
   # Pickup parameters
   #
-  local definition_conf_path=$1
-  local user_conf_path=$2
-  local -a modes=(${*[3,-1]})
+  # * Pickup parameter value, and remove from args list
+  #
+
+  # Pick up definition file path
+  local definition_conf_path
+  {
+    local -i opt_idx
+
+    if ! _zcpb::verify_no_duplicated_options '-d' '--definition-file' ${args}
+    then
+      echo 'Found duplicated option -d/--definition-file' 1>&2
+      return 1
+    fi
+
+    foreach option_key ('-d' '--definition-file')
+    do
+      opt_idx=$(_zcpb::get_option_index ${option_key} ${args})
+      if _zcpb::is_valid_index_for_array ${opt_idx} ${args}
+      then
+        definition_conf_path=${args[$((${opt_idx} + 1))]}
+        args[${opt_idx},$((${opt_idx} + 1))]=()
+        break
+      else
+        echo 'Could not find the definition file' 1>&2
+        return 1
+      fi
+    done
+  }
+
+  # Pick up configuration paths
+  local -aU user_conf_paths=()
+  {
+    local -i opt_idx=0
+    local opt_value
+
+    while _zcpb::is_valid_index_for_array ${opt_idx} ${args}
+    do
+      # Set invalid value
+      opt_idx=$((${#args} + 1))
+
+      # Search option
+      local -i is_end=1
+      foreach option_key ('-c' '--configuration-file')
+      do
+        opt_idx=$(_zcpb::get_option_index ${option_key} ${args})
+        if _zcpb::is_valid_index_for_array ${opt_idx} ${args}
+        then
+          is_end=0
+          break
+        fi
+      done
+
+      if (( ${is_end} == 1 ))
+      then
+        break
+      fi
+
+      opt_value=${args[$((${opt_idx} + 1))]}
+      if [[ -z ${opt_value} ]]
+      then
+        break
+      fi
+
+      args[${opt_idx},$((${opt_idx} + 1))]=()
+      user_conf_paths+=(${opt_value})
+    done
+
+    if (( ${#user_conf_paths} == 0 ))
+    then
+      echo 'Could not find the configuration file' 1>&2
+      return 1
+    fi
+  }
+
+  # Pick up modes
+  local -a modes=(${args})
 
   #
   # Validate variables
   #
-  if [[ ! -f ${definition_conf_path} ]]
-  then
-    echo "Error: Definition configuration file not found" 1>&2
-    return 1
-  fi
+  {
+    if [[ ! -f ${definition_conf_path} ]]
+    then
+      echo "Error: Definition configuration file not found" 1>&2
+      return 1
+    fi
 
-  if [[ ! -f ${user_conf_path} ]]
-  then
-    echo "Error: User configuration file not found" 1>&2
-    return 1
-  fi
-
+    foreach user_conf_path (${user_conf_paths})
+    do
+      if [[ ! -f ${user_conf_path} ]]
+      then
+        echo "Error: User configuration file not found" 1>&2
+        return 1
+      fi
+    done
+  }
   #
   # Import user configuration as variable
   #
-  source ${user_conf_path}
+  foreach user_conf_path (${user_conf_paths})
+  do
+    source ${user_conf_path}
+  done
 
   #
   # Map values to associated array
   #
-  typeset -A base=()
-  typeset -A header=()
-  typeset -A query=()
-  typeset -A cookie=()
-
-  eval $(zcl ${definition_conf_path} _zcpb::eval_string :type :key :value)
+  local -A base=()
+  local -A header=()
+  local -A query=()
+  local -A cookie=()
+  {
+    eval $(zcl ${definition_conf_path} _zcpb::eval_string :type :key :value)
+  }
 
   #
   # Build header
   #
-  typeset -a headers=()
-  foreach k v (${(kv)header})
-  do
-    headers+=("-H '${k}:${v}'")
-  done
+  local -a headers=()
+  {
+    foreach k v (${(kv)header})
+    do
+      headers+=("-H '${k}:${v}'")
+    done
+  }
 
   #
   # Build query
   #
-  typeset queries=''
-  foreach k v (${(kv)query})
-  do
-    if [[ -z ${queries} ]]
-    then
-      queries+="${k}=${v}"
-      continue
-    fi
+  local queries=''
+  {
+    foreach k v (${(kv)query})
+    do
+      if [[ -z ${queries} ]]
+      then
+        queries+="${k}=${v}"
+        continue
+      fi
 
-    queries+="&${k}=${v}"
-  done
+      queries+="&${k}=${v}"
+    done
+  }
 
   #
   # Build cookie
   #
-  typeset cookies='Cookie:'
-  foreach k v (${(kv)cookie})
-  do
-    cookies+=" ${k}=${v};"
-  done
-  cookies="-H '${cookies[1,-2]}'"
+  local cookies='Cookie:'
+  {
+    foreach k v (${(kv)cookie})
+    do
+      cookies+=" ${k}=${v};"
+    done
+    cookies="-H '${cookies[1,-2]}'"
+  }
 
   #
   # Display result
