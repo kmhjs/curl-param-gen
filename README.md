@@ -117,7 +117,7 @@ For example:
 
 * If you give 2 configuration files `first.conf` and `second.conf`
   * As `-c first.conf -c second.conf`
-  * Both of them contains value for variable `session_id`
+  * Both of them contains value for same variable
 
 In this case, the value defined in `second.conf` will be used for the final result.
 
