@@ -116,6 +116,32 @@ function _zcpb::is_valid_index_for_array()
 }
 
 #
+# Show help
+#
+function _zcpb::show_help()
+{
+cat <<EOF
+SYNOPSIS
+  ./curl-param-gen.sh [-h] [--pretty] [-d definition-file-path] [-c configuration-file-path] ...
+
+OPTIONS
+  -h, --help : Show this message
+  --pretty : Print curl command line with indent
+  -d, --definition-file : Set definition file path
+  -c, --configuration-file : Set configuration file path
+
+USAGE
+  1. Show curl command for configuration
+
+    ./curl-param-gen.sh -d definition.conf -c conf1.conf -c conf2.conf
+
+  2. Show help
+
+    ./curl-param-gen.sh -h
+EOF
+}
+
+#
 # Main task of zcpb
 #
 # @param definition_conf_path Parameter definition file path.
@@ -125,6 +151,20 @@ function _zcpb::is_valid_index_for_array()
 function _zcpb::main()
 {
   local -a args=($*)
+
+  #
+  # Check args contains help option or not
+  #
+  foreach option_key ('-h' '--help')
+  do
+    opt_idx=$(_zcpb::get_option_index ${option_key} ${args})
+    if _zcpb::is_valid_index_for_array ${opt_idx} ${args}
+    then
+      _zcpb::show_help
+      return 0
+    fi
+  done
+
 
   if ! _zcpb::is_zcl_available
   then
