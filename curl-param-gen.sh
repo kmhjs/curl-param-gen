@@ -1,9 +1,10 @@
 #! /usr/bin/env zsh -f
 
 #
-# Load zcl
+# Load libraries
 #
 source ./lib/zcl
+source ./lib/value_pop.sh
 
 #
 # Generates mapping script line (will be used by `eval`)
@@ -150,7 +151,7 @@ EOF
 #
 function _zcpb::main()
 {
-  local -a args=($*)
+  local -ax args=($*)
 
   #
   # Check args contains help option or not
@@ -181,7 +182,7 @@ function _zcpb::main()
   # Pick up definition file path
   local definition_conf_path
   {
-    local -i opt_idx
+    local -x result
 
     if ! _zcpb::verify_no_duplicated_options '-d' '--definition-file' ${args}
     then
@@ -191,55 +192,47 @@ function _zcpb::main()
 
     foreach option_key ('-d' '--definition-file')
     do
-      opt_idx=$(_zcpb::get_option_index ${option_key} ${args})
-      if _zcpb::is_valid_index_for_array ${opt_idx} ${args}
+      @option::value_pop args result ${option_key}
+      if [[ -n ${result} ]]
       then
-        definition_conf_path=${args[$((${opt_idx} + 1))]}
-        args[${opt_idx},$((${opt_idx} + 1))]=()
+        definition_conf_path=${result}
         break
-      else
-        echo 'Could not find the definition file' 1>&2
-        return 1
       fi
     done
+
+    if [[ -z ${definition_conf_path} ]]
+    then
+      echo 'Could not find the definition file' 1>&2
+      return 1
+    fi
   }
 
   # Pick up configuration paths
   local -aU user_conf_paths=()
   {
-    local -i opt_idx=0
-    local opt_value
+    local -x result=0
 
-    while _zcpb::is_valid_index_for_array ${opt_idx} ${args}
+    while [[ -n ${result} ]]
     do
-      # Set invalid value
-      opt_idx=$((${#args} + 1))
-
       # Search option
       local -i is_end=1
+      result=''
+
       foreach option_key ('-c' '--configuration-file')
       do
-        opt_idx=$(_zcpb::get_option_index ${option_key} ${args})
-        if _zcpb::is_valid_index_for_array ${opt_idx} ${args}
+        @option::value_pop args result ${option_key}
+        if [[ -n ${result} ]]
         then
-          is_end=0
           break
         fi
       done
 
-      if (( ${is_end} == 1 ))
+      if [[ -z ${result} ]]
       then
         break
       fi
 
-      opt_value=${args[$((${opt_idx} + 1))]}
-      if [[ -z ${opt_value} ]]
-      then
-        break
-      fi
-
-      args[${opt_idx},$((${opt_idx} + 1))]=()
-      user_conf_paths+=(${opt_value})
+      user_conf_paths+=(${result})
     done
 
     if (( ${#user_conf_paths} == 0 ))
