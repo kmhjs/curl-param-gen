@@ -4,7 +4,7 @@
 # Load libraries
 #
 source ./lib/zcl
-source ./lib/value_pop.sh
+source ./lib/value_pop.zsh
 
 #
 # Generates mapping script line (will be used by `eval`)
