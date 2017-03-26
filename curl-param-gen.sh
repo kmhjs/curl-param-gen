@@ -73,14 +73,13 @@ function _zcpb::main()
   #
   foreach option_key ('-h' '--help')
   do
-    opt_idx=$(@array::first_index ${option_key} ${args})
+    local -i opt_idx=$(@array::first_index ${option_key} ${args})
     if @array::is_valid_index ${opt_idx} ${args}
     then
       _zcpb::show_help
       return 0
     fi
   done
-
 
   if ! _zcpb::is_zcl_available
   then
