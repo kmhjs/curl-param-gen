@@ -178,6 +178,7 @@ function _zcpb::main()
       fi
     done
   }
+
   #
   # Import user configuration as variable
   #

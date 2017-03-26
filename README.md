@@ -31,6 +31,9 @@ Generate curl parameter from configuration file.
 Note that value must be urlencoded value if you use constant value.
 
 ```
+#
+# Base configurations (url, path)
+#
 (
   :type  'base'
   :key   'url'
@@ -42,6 +45,9 @@ Note that value must be urlencoded value if you use constant value.
   :value '${base_path}'
 )
 
+#
+# Header configuration
+#
 (
   :type  'header'
   :key   'type'
@@ -53,6 +59,9 @@ Note that value must be urlencoded value if you use constant value.
   :value '${header_option}'
 )
 
+#
+# URL query parameter configuration
+#
 (
   :type  'query'
   :key   'name'
@@ -74,6 +83,9 @@ Note that value must be urlencoded value if you use constant value.
   :value 'constant-value'
 )
 
+#
+# Cookie configuration
+#
 (
   :type  'cookie'
   :key   'session_id'
@@ -84,6 +96,7 @@ Note that value must be urlencoded value if you use constant value.
   :key   'option'
   :value '${cookie_option}'
 )
+
 ```
 
 ### Private configuration
@@ -107,7 +120,9 @@ header_option='header-option'
 query_name='username'
 query_id='0123456789'
 query_option='query-option'
+```
 
+```
 cookie_session_id='session-id-value-0123456789'
 cookie_option='cookie-option'
 ```
