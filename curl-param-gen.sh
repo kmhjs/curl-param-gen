@@ -4,7 +4,8 @@
 # Load libraries
 #
 source ./lib/zcl
-source ./lib/value_pop.zsh
+source ./lib/option_extension.zsh
+source ./lib/array_extension.zsh
 
 #
 # Generates mapping script line (will be used by `eval`)
@@ -23,97 +24,11 @@ function _zcpb::eval_string()
 }
 
 #
-# Verifies there are no duplicated options
-# (Duplicated options means short/long option etc. Not same options)
-#
-# @param 1st option string
-# @param 2nd option string
-# @param Args for script
-#
-function _zcpb::verify_no_duplicated_options()
-{
-  local -a options=($1 $2)
-  local -a args=($*)
-
-  # Verify args for this function
-  if [[ ${#options} != 2 ]]
-  then
-    echo "Error: Invalid option was found for $0" 1>&2
-    return 1
-  fi
-
-  # Remove heading option string
-  args[1,2]=()
-
-  # Verify the number of args
-  if [[ ${#args} == 0 ]]
-  then
-    echo "Error: No args for verify in $0" 1>&2
-    return 1
-  fi
-
-  # Verify the target
-  if [[ ${args[(i)${options[1]}]} == $((${#args} + 1)) ]]
-  then
-    return 0
-  fi
-
-  if [[ ${args[(i)${options[2]}]} != $((${#args} + 1)) ]]
-  then
-    return 1
-  fi
-
-  return 0
-}
-
-#
-# Select next target index of given option
-#
-# Example:
-#   ./$0 --key -k1 v1 -k2 v2 --key v3 --key v4 -k5 v5
-#
-#   returns, 6. Index of option correspond to value v3.
-#
-# @param Parse target option
-# @return Result index (null if value not found for key)
-#
-function _zcpb::get_option_index()
-{
-  local option_key=$1
-  shift
-
-  local -i idx=${*[(i)${option_key}]}
-  if [[ ${idx} == $# ]]
-  then
-    return 1
-  fi
-
-  echo ${idx}
-  return 0
-}
-
-#
 # Check zcl availability
 #
 function _zcpb::is_zcl_available()
 {
   type zcl 1>/dev/null 2>/dev/null
-}
-
-#
-# Check given index is valid for array
-#
-# Note: For index validation of (i) option result
-#
-# @param index value [1..N]
-# @param Target array
-#
-function _zcpb::is_valid_index_for_array()
-{
-  local -i index=$1
-  shift
-
-  (( ${index} < $(($# + 1)) ))
 }
 
 #
@@ -158,8 +73,8 @@ function _zcpb::main()
   #
   foreach option_key ('-h' '--help')
   do
-    opt_idx=$(_zcpb::get_option_index ${option_key} ${args})
-    if _zcpb::is_valid_index_for_array ${opt_idx} ${args}
+    opt_idx=$(@array::first_index ${option_key} ${args})
+    if @array::is_valid_index ${opt_idx} ${args}
     then
       _zcpb::show_help
       return 0
@@ -184,7 +99,7 @@ function _zcpb::main()
   {
     local -x result
 
-    if ! _zcpb::verify_no_duplicated_options '-d' '--definition-file' ${args}
+    if @option::has_duplicated_options '-d' '--definition-file' ${args}
     then
       echo 'Found duplicated option -d/--definition-file' 1>&2
       return 1
