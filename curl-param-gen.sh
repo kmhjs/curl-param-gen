@@ -194,6 +194,7 @@ function _zcpb::main()
   local -A header=()
   local -A query=()
   local -A cookie=()
+  local -A http_method=()
   {
     eval $(zcl ${definition_conf_path} _zcpb::eval_string :type :key :value)
   }
@@ -239,6 +240,18 @@ function _zcpb::main()
   }
 
   #
+  # HTTP method
+  #
+  local http_method_option=''
+  {
+    local method=${http_method[method]}
+    if [[ -n ${method} ]]
+    then
+      http_method_option="-X ${method}"
+    fi
+  }
+
+  #
   # Display result
   #
   if [[ ${modes[(I)--pretty]} != 0 ]]
@@ -246,8 +259,8 @@ function _zcpb::main()
     local indent_heading_space='     '
     local linebreak_escape=' \'
 
-    echo "curl ${headers[1]}${linebreak_escape}"
-    foreach header_element (${headers[2,-1]})
+    echo "curl ${http_method_option}${linebreak_escape}"
+    foreach header_element (${headers})
     do
       echo "${indent_heading_space}${header_element}${linebreak_escape}"
     done

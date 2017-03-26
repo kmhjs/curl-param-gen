@@ -27,6 +27,7 @@ Generate curl parameter from configuration file.
   * `header` : Header values
   * `cookie` : Cookie values
   * `query` : Query parameters
+  * `http_method` : HTTP method / {GET, POST, ...}
 
 Note that value must be urlencoded value if you use constant value.
 
@@ -43,6 +44,15 @@ Note that value must be urlencoded value if you use constant value.
   :type  'base'
   :key   'path'
   :value '${base_path}'
+)
+
+#
+# Request configuration
+#
+(
+  :type  'http_method'
+  :key   'method'
+  :value 'GET'
 )
 
 #
@@ -145,7 +155,8 @@ The result for following command execution.
 ```
 
 ```
-curl -H 'session_id:header-option' \
+curl -X GET \
+     -H 'session_id:header-option' \
      -H 'type:sample' \
      -H 'Cookie: session_id=session-id-value-0123456789; option=cookie-option' \
      'http://example.com/task?option=query-option&constant_field=constant-value&id=0123456789&name=username'
